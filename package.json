@@ -1,14 +1,14 @@
 {
-  "name": "bookmarklet",
+  "name": "rakumoTimeRecorderBookmarklet",
   "version": "1.0.0",
-  "description": "",
+  "description": "rakumoタイムレコーダーを機能拡張するブックマークレット",
   "main": "index.js",
   "scripts": {
     "build": "gulp closure-compile",
-    "test": "jest"
+    "test": "gulp jest"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "tsubasa",
+  "license": "MIT",
   "devDependencies": {
     "@types/jest": "^23.3.0",
     "babel-core": "^6.26.3",
