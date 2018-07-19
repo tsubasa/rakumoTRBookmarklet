@@ -5,6 +5,7 @@ const fs = require('fs');
 const gulp = require('gulp');
 const insert = require('gulp-insert');
 const jest = require('gulp-jest').default;
+const replace = require('gulp-replace');
 const closureCompiler = require('google-closure-compiler').gulp({ jsMode: true });
 
 const tmpJsPath = './src/tmp.js';
@@ -67,6 +68,7 @@ gulp.task('closure-compile', () => {
 				language_out: 'ECMASCRIPT6_STRICT',
 				js_output_file: 'bookmarklet.js'
 			}))
+			.pipe(replace(/\r?\n/g, ''))
 			.pipe(insert.wrap('javascript:(function(){', '})();')) // eslint-disable-line no-script-url
 			.pipe(gulp.dest('dist'))
 			.on('end', () => {
