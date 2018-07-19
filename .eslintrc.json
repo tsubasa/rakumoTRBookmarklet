@@ -1,0 +1,45 @@
+{
+    "extends": "airbnb-base",
+    "env": {
+        "browser": true,
+        "es6": true,
+        "jest": true,
+        "node": true
+    },
+    "parser": "babel-eslint",
+    "parserOptions": {
+        "ecmaVersion": 6,
+        "sourceType": "module"
+    },
+    "rules": {
+        "arrow-body-style": "off",
+        "array-callback-return": "off",
+        "class-methods-use-this": "off",
+        "comma-dangle": ["warn", "never"],
+        "consistent-return": "off",
+        "eqeqeq": "warn",
+        "func-names": ["warn", "as-needed"],
+        "function-paren-newline": "off",
+        "implicit-arrow-linebreak": "off",
+        "indent": "off",
+        "import/no-extraneous-dependencies": "off",
+        "key-spacing": ["warn"],
+        "semi": "off",
+        "space-infix-ops": "warn",
+        "max-len": "off",
+        "no-console": "warn",
+        "no-multi-spaces": "warn",
+        "no-new": "off",
+        "no-param-reassign": "warn",
+        "no-plusplus": "warn",
+        "no-prototype-builtins": "off",
+        "no-tabs": "off",
+        "no-underscore-dangle": ["error", { "allowAfterThis": true, "enforceInMethodNames": false }],
+        "no-use-before-define": ["error", { "functions": false, "classes": false }],
+        "object-shorthand": ["error", "always", { "avoidQuotes": true }],
+        "prefer-const": "warn",
+        "prefer-template": "warn",
+        "quote-props": "warn",
+        "radix": "off"
+    }
+}

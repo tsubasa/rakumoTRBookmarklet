@@ -1,0 +1,32 @@
+{
+  "name": "bookmarklet",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "gulp closure-compile",
+    "test": "jest"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/jest": "^23.3.0",
+    "babel-core": "^6.26.3",
+    "babel-eslint": "^8.2.5",
+    "babel-jest": "^23.4.0",
+    "babel-plugin-transform-class-properties": "^6.24.1",
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.26.2",
+    "babel-plugin-transform-runtime": "^6.23.0",
+    "babel-preset-env": "^1.7.0",
+    "eslint": "^4.19.1",
+    "eslint-config-airbnb-base": "^13.0.0",
+    "eslint-plugin-import": "^2.13.0",
+    "google-closure-compiler": "^20180610.0.2",
+    "gulp": "^3.9.1",
+    "gulp-insert": "^0.5.0",
+    "gulp-jest": "^4.0.2",
+    "jest": "^23.4.1",
+    "jest-cli": "^23.4.1",
+    "rimraf": "^2.6.2"
+  }
+}
