@@ -135,7 +135,7 @@ class CalcTimeCard {
         this.penalty = this._round(this.penalty - (this.amCore + this.pmCore));
 
         // 残業計算
-        this.overtime = (this.dayWork - this.WORK_TIME) > 0 ? this._round(this.dayWork - this.WORK_TIME) : 0;
+        this.overtime = (this.dayWork - this.WORK_TIME) > 0 ? this._round(this.dayWork - this.WORK_TIME, 1) : 0;
 
         // amコア, pmコア, コア外, 日計, ペナルティ, 残業, 有休
         return [this.amCore, this.pmCore, this._round(this.dayWork - (this.amCore + this.pmCore)), this.dayWork, this.penalty, this.overtime, offDay];
@@ -198,14 +198,16 @@ class CalcTimeCard {
     }
 
     /**
-     * 小数点第3位を四捨五入
+     * 任意の小数点以下を四捨五入して計算
      *
-     * @param {*} value
-     * @returns
+     * @param {number} value 値
+     * @param {number} [precision=2] 少数第何位までを求めるか
+     * @returns number
      * @memberof CalcTimeCard
      */
-    _round(value) {
-        return Math.round(value * 100) / 100;
+    _round(value, precision = 2) {
+        const digit = Math.pow(10, precision); // eslint-disable-line no-restricted-properties
+        return Math.round(value * digit) / digit;
     }
 }
 
