@@ -17,24 +17,24 @@
 * Google Chrome v67+
 * Firefox v56+
 
-### ブックマークレットを登録する
+### ブックマークレットを使えるようにする
 
-#### Google Chrome ユーザー
+#### Google Chrome ユーザーはこちら
 
-1. [/dist/bookmarklet.js](dist/bookmarklet.js) を開きソースコードを丸々コピーする
+1. [/dist/bookmarklet.js](dist/bookmarklet.js) を開きJsコードを丸々コピーする
 2. Google Chromeを起動し、ブックマークマネージャー( `chrome://bookmarks/` )を開く
 3. 開いたページ内で右クリックし、「新しいブックマークを追加」をクリック
 4. 名前はお好きにどうぞ「rakumoタイムカードブックマークレット」など
-5. URLに先程コピーしたjsコードを貼り付ける
+5. URLに先程コピーしたJsコードを貼り付ける
 6. `[保存]`をクリックして完了
 
-#### Firefox ユーザー
+#### Firefox ユーザーはこちら
 
-1. [/dist/bookmarklet.js](dist/bookmarklet.js) を開きソースコードを丸々コピーする
+1. [/dist/bookmarklet.js](dist/bookmarklet.js) を開きJsコードを丸々コピーする
 2. Firefoxを起動し、ブックマーク管理を開く
 3. 開いたウィンドウ内で右クリックし、「新しいブックマーク」をクリック
 4. 名前はお好きにどうぞ「rakumoタイムカードブックマークレット」など
-5. URLに先程コピーしたjsコードを貼り付ける
+5. URLに先程コピーしたJsコードを貼り付ける
 6. `[追加]`をクリックして完了
 
 * [ブックマークレットをインストールする方法 | Firefox ヘルプ](https://support.mozilla.org/ja/kb/bookmarklets-perform-common-web-page-tasks)
@@ -55,3 +55,4 @@
 * 代休や休日出勤の計算には未対応（要望があれば今後対応するかもしれません）
 * 徹夜作業などは正しい計算が出来ません。
 * 夏期休暇をずらして取得すると正しく計算が出来ません。
+* 午前休を取得して午後から遅刻して出勤した場合のペナルティとその逆のパターン
