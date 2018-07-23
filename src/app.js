@@ -1,7 +1,7 @@
 /* eslint-disable no-param-reassign */
 
 // バージョン
-const VERSION = '1.0.1';
+const VERSION = '1.0.2';
 
 // 休暇テーブル
 let HOLIDAY = {};
