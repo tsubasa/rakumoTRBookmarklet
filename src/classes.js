@@ -207,7 +207,7 @@ class CalcTimeCard {
      */
     _round(value, precision = 2) {
         const digit = Math.pow(10, precision); // eslint-disable-line no-restricted-properties
-        return Math.round(value * digit) / digit;
+        return Math.round((value + 0.0001) * digit) / digit; // 0.0001 は IEEE 754 における浮動小数点演算の誤差対策
     }
 }
 
