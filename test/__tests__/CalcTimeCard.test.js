@@ -1,3 +1,5 @@
+/* eslint-disable no-underscore-dangle */
+
 import CalcTimeCard from '../../src/classes';
 
 const ctc = new CalcTimeCard();
@@ -322,6 +324,22 @@ describe('class: CalcTimeCard', () => {
             test('17:00-22:00', () => {
                 const result = ctc.calc('17:00', '22:00');
                 expect(result).toEqual([0, 0, 5, 5, 4, 0, 0]);
+            });
+        });
+
+        describe('浮動小数点演算', () => {
+            test('10:00-19:21', () => {
+                const result = ctc.calc('10:00', '19:21');
+                expect(result).toEqual([2, 2, 4.35, 8.35, 0, 0.4, 0]);
+            });
+
+            test('10:58-20:19', () => {
+                const result = ctc.calc('10:58', '20:19');
+                expect(result).toEqual([2, 2, 4.35, 8.35, 0, 0.4, 0]);
+            });
+
+            test('10:49-20:16', () => {
+                expect(ctc.calc('10:49', '20:16')).toEqual([2, 2, 4.45, 8.45, 0, 0.5, 0]);
             });
         });
 
