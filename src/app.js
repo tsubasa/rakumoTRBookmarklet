@@ -52,7 +52,9 @@ const req = (method, url) => {
 
                 // ブックマークレットのバージョンチェック
                 if (json.VERSION !== VERSION) {
-                    alert('ブックマークレットに更新があります。最新版に更新してください。'); // eslint-disable-line no-alert
+                    if (window.confirm('ブックマークレットに更新があります。最新版に更新してください。')) {
+                        location.href = json.URL;
+                    }
                 }
 
                 // rakumo実行
