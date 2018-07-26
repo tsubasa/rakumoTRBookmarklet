@@ -1,7 +1,7 @@
 /* eslint-disable no-param-reassign */
 
 // バージョン
-const VERSION = '1.0.2';
+const VERSION = '1.1.3';
 
 // 休暇テーブル
 let HOLIDAY = {};
@@ -52,8 +52,8 @@ const req = (method, url) => {
 
                 // ブックマークレットのバージョンチェック
                 if (json.VERSION !== VERSION) {
-                    if (window.confirm('ブックマークレットに更新があります。最新版に更新してください。')) {
-                        location.href = json.URL;
+                    if (window.confirm('ブックマークレットに更新があります。最新版に更新してください。')) { // eslint-disable-line no-alert
+                        window.location.href = json.URL;
                     }
                 }
 
@@ -63,7 +63,7 @@ const req = (method, url) => {
                 alert('休暇データの読込みに失敗しました。'); // eslint-disable-line no-alert
             }
         } catch (e) {
-            console.error(e);
+            console.error(e); // eslint-disable-line no-console
         }
     };
     xhr.send();
@@ -82,6 +82,7 @@ class RakumoTimeRecorder {
         // ここからメイン
         let timecard = this.TableParser.getAll(true);
         const workDay = this.getWorkDay();
+        let offWorkDay = 0;
 
         // 実績用タイムカード配列生成
         const calcData = [];
@@ -104,6 +105,10 @@ class RakumoTimeRecorder {
                 } else {
                     calcData.push(this.CalcTimeCard.calc(startTime, endTime));
                 }
+            } else if (this.isOffWork(value[5])) {
+                // 休日出勤
+                offWorkDay += 1;
+                calcData.push(this.CalcTimeCard.calc(startTime, endTime));
             }
         });
 
@@ -161,12 +166,14 @@ class RakumoTimeRecorder {
         elTbl.innerHTML = '[今月の想定] ';
 
         // 今月の想定
-        [coreTime * workDay, (workTime - coreTime) * workDay, workTime * workDay].forEach((v, idx) => {
+        [coreTime * (workDay + offWorkDay) - data[6] * coreTime, (workTime - coreTime) * (workDay + offWorkDay), workTime * (workDay + offWorkDay) - data[6] * coreTime].forEach((v, idx) => {
             if (idx) elTbl.innerHTML += ', ';
             elTbl.innerHTML += `${keys[idx]}: ${v}`;
         });
+
         // 営業日数
-        elTbl.innerHTML += `, 営業日数: ${workDay}日, 残り: ${leftDay}日`;
+        const offWork = offWorkDay ? `, 休出: ${offWorkDay}日` : '';
+        elTbl.innerHTML += `, 営業日数: ${workDay}日, 残り: ${leftDay}日${offWork}`;
 
         const age = 'までの';
         const label = `現在${age}`;
@@ -210,7 +217,7 @@ class RakumoTimeRecorder {
     /**
      * 月の営業日数を取得
      *
-     * @returns
+     * @returns number
      * @memberof RakumoTimeRecorder
      */
     getWorkDay() {
@@ -234,7 +241,7 @@ class RakumoTimeRecorder {
     /**
      * 年を yyyy で取得
      *
-     * @returns
+     * @returns string
      * @memberof RakumoTimeRecorder
      */
     getYear() {
@@ -244,7 +251,7 @@ class RakumoTimeRecorder {
     /**
      * 月を mm で取得
      *
-     * @returns
+     * @returns string
      * @memberof RakumoTimeRecorder
      */
     getMonth() {
@@ -275,7 +282,7 @@ class RakumoTimeRecorder {
     /**
      * HHMMのデータを取得
      *
-     * @returns
+     * @returns string
      * @memberof RakumoTimeRecorder
      */
     getHHMM() {
@@ -285,8 +292,8 @@ class RakumoTimeRecorder {
     /**
      * 営業日の判定
      *
-     * @param {*} yyyymmdd
-     * @returns
+     * @param {string} yyyymmdd
+     * @returns bool
      * @memberof RakumoTimeRecorder
      */
     isWorkDay(yyyymmdd) {
@@ -294,10 +301,21 @@ class RakumoTimeRecorder {
     }
 
     /**
+     * 休日出勤判定
+     *
+     * @param {string} string
+     * @returns bool
+     * @memberof RakumoTimeRecorder
+     */
+    isOffWork(string) {
+        return /休出|休日出勤/.test(string);
+    }
+
+    /**
      * 有給判定
      *
-     * @param {*} string
-     * @returns
+     * @param {string} string
+     * @returns bool
      * @memberof RakumoTimeRecorder
      */
     isOff(string) {
@@ -307,29 +325,29 @@ class RakumoTimeRecorder {
     /**
      * 午前休判定
      *
-     * @param {*} string
-     * @returns
+     * @param {string} string
+     * @returns bool
      * @memberof RakumoTimeRecorder
      */
     isOffAM(string) {
-        return /[前|AM|ＡＭ]半?休/i.test(string);
+        return /[前|AM|ＡＭ]半?休暇?/i.test(string);
     }
 
     /**
      * 午後休判定
      *
-     * @param {*} string
-     * @returns
+     * @param {string} string
+     * @returns bool
      * @memberof RakumoTimeRecorder
      */
     isOffPM(string) {
-        return /[後|PM|ＰＭ]半?休/i.test(string);
+        return /[後|PM|ＰＭ]半?休暇?/i.test(string);
     }
 
     /**
      * 文字列から日を取得
      *
-     * @param {*} string
+     * @param {string} string
      * @memberof RakumoTimeRecorder
      */
     _formatDay(string) {
@@ -341,8 +359,8 @@ class RakumoTimeRecorder {
      * 文字列から hh:mm を取得する
      *
      * @private
-     * @param {*} string
-     * @returns
+     * @param {string} string
+     * @returns string
      * @memberof TableParser
      */
     _formatTime(string) {
@@ -373,7 +391,7 @@ class TableParser {
      * レコードを全件取得
      *
      * @param {boolean} [today=false] trueなら本日までのデータを取得
-     * @returns
+     * @returns array
      * @memberof TableParser
      */
     getAll(today = false) {
@@ -395,8 +413,8 @@ class TableParser {
     /**
      * 指定したレコードを取得
      *
-     * @param {*} offset
-     * @returns
+     * @param {number} offset
+     * @returns array
      * @memberof TableParser
      */
     getRow(offset) {
@@ -418,7 +436,7 @@ class RowParser {
     /**
      * 配列でレコードを取得
      *
-     * @returns
+     * @returns array
      * @memberof RowParser
      */
     getAll(row) {
@@ -428,7 +446,7 @@ class RowParser {
     /**
      * 日付を取得
      *
-     * @returns
+     * @returns string
      * @memberof RowParser
      */
     getDate(row) {
@@ -438,7 +456,7 @@ class RowParser {
     /**
      * 出勤時間を取得
      *
-     * @returns
+     * @returns string
      * @memberof RowParser
      */
     getStartTime(row) {
@@ -448,7 +466,7 @@ class RowParser {
     /**
      * 退勤時間を取得
      *
-     * @returns
+     * @returns string
      * @memberof RowParser
      */
     getEndTime(row) {
@@ -458,7 +476,7 @@ class RowParser {
     /**
      * 外出時間を取得
      *
-     * @returns
+     * @returns string
      * @memberof RowParser
      */
     getOutTime(row) {
@@ -468,7 +486,7 @@ class RowParser {
     /**
      * 帰社時間を取得
      *
-     * @returns
+     * @returns string
      * @memberof RowParser
      */
     getInTime(row) {
@@ -478,7 +496,7 @@ class RowParser {
     /**
      * コメントを取得
      *
-     * @returns
+     * @returns string
      * @memberof RowParser
      */
     getComment(row) {
@@ -488,7 +506,7 @@ class RowParser {
     /**
      * レコードをパース
      *
-     * @param {*} row
+     * @param {object} row
      * @returns array
      * @memberof RowParser
      */
@@ -504,8 +522,8 @@ class RowParser {
      * 不要な文字列を排除
      *
      * @private
-     * @param {*} string
-     * @returns
+     * @param {string} string
+     * @returns string|null
      * @memberof RowParser
      */
     _clean(string) {
