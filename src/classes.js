@@ -64,6 +64,20 @@ class CalcTimeCard {
     }
 
     /**
+     * 休日出勤(申請)計算
+     *
+     * @param {*} start hh:mm 出勤時間
+     * @param {*} end hh:mm 退勤時間
+     * @returns array
+     * @memberof CalcTimeCard
+     */
+    offWork(start, end) {
+        const tmpCalc = this.calc(start, end);
+        // 休出の場合はコア外、残業を日計で統一する
+        return [0, 0, tmpCalc[3], tmpCalc[3], 0, tmpCalc[3], 0];
+    }
+
+    /**
      * 労働時間を計算
      *
      * @param {*} start hh:mm 出勤時間
@@ -77,7 +91,7 @@ class CalcTimeCard {
 
         const amStart = this.AM_CORE_START; // 午前のコア開始時刻
         const amEnd = this.AM_CORE_END; // 午前のコア終了時刻
-        const pmStart = this.PM_CORE_START; // 午後ののコア開始時刻
+        const pmStart = this.PM_CORE_START; // 午後のコア開始時刻
         const pmEnd = this.PM_CORE_END; // 午後のコア終了時刻
         let amWorkTime = 0; // 午前中の労働時間
         let pmWorkTime = 0; // 午後の労働時間

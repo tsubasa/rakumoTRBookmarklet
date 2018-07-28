@@ -23,7 +23,7 @@ describe('class: CalcTimeCard', () => {
         });
     });
 
-    describe('method: calc(), offAM(), offPM(), off()', () => {
+    describe('method: calc(), offAM(), offPM(), off(), offWork()', () => {
         describe('09:00 -', () => {
             test('09:00-10:00', () => {
                 const result = ctc.calc('09:00', '10:00');
@@ -344,23 +344,27 @@ describe('class: CalcTimeCard', () => {
         });
 
         test('有給休暇', () => {
-            const result = ctc.off();
-            expect(result).toEqual([2, 2, 4, 8, 0, 0, 1]);
+            expect(ctc.off()).toEqual([2, 2, 4, 8, 0, 0, 1]);
         });
 
         test('午前休 (18:30 退社)', () => {
-            const result = ctc.offAM('18:30');
-            expect(result).toEqual([2, 2, 4, 8, 0, 0, 0.5]);
+            expect(ctc.offAM('18:30')).toEqual([2, 2, 4, 8, 0, 0, 0.5]);
         });
 
         test('午後休 (09:30 出社)', () => {
-            const result = ctc.offPM('09:30');
-            expect(result).toEqual([2, 2, 4, 8, 0, 0, 0.5]);
+            expect(ctc.offPM('09:30')).toEqual([2, 2, 4, 8, 0, 0, 0.5]);
         });
 
         test('欠勤', () => {
-            const result = ctc.calc();
-            expect(result).toEqual([0, 0, 0, 0, 4, 0, 0]);
+            expect(ctc.calc()).toEqual([0, 0, 0, 0, 4, 0, 0]);
+        });
+
+        test('休日出勤 (09:30-18:30)', () => {
+            expect(ctc.offWork('09:30', '18:30')).toEqual([0, 0, 8, 8, 0, 8, 0]);
+        });
+
+        test('休日出勤 (13:00-14:00)', () => {
+            expect(ctc.offWork('13:00', '14:00')).toEqual([0, 0, 0, 0, 0, 0, 0]);
         });
     });
 });
