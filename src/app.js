@@ -1,7 +1,7 @@
 /* eslint-disable no-param-reassign */
 
 // バージョン
-const VERSION = '1.1.3';
+const VERSION = '1.2.0';
 
 // 休暇テーブル
 let HOLIDAY = {};
@@ -76,18 +76,37 @@ const req = (method, url) => {
  */
 class RakumoTimeRecorder {
     constructor() {
+        // インスタンス生成
         this.CalcTimeCard = new CalcTimeCard(); // eslint-disable-line no-undef
         this.TableParser = new TableParser('.tableBody .dateRow');
 
-        // ここからメイン
-        let timecard = this.TableParser.getAll(true);
-        const workDay = this.getWorkDay();
-        let offWorkDay = 0;
+        // 初期値
+        this.calcData = []; // 実績計算結果格納配列
+        this.timeData = []; // コピー用タイムカード配列
+        this.offCompDay = 0; // 代休日数
+        this.offWorkDay = 0; // 休日出勤(申請)
+        this.offWorkDay2 = 0; // 休日出勤(申請なし)
 
-        // 実績用タイムカード配列生成
-        const calcData = [];
+        // 実行
+        this.calc();
+        this.render();
+    }
+
+    /**
+     * レンダリングに必要なデータを処理
+     *
+     * @memberof RakumoTimeRecorder
+     */
+    calc() {
+        // tmp変数
+        let tmpTimeCard = []; // タイムカード代入変数
+
+        // 本日までのタイムカードデータを取得
+        tmpTimeCard = this.TableParser.getAll(true);
+
+        // 本日までの実績を計算
         const yyyymm = [this.getYear(), this.getMonth()].join('-');
-        timecard.forEach((value) => {
+        tmpTimeCard.forEach((value) => {
             const yyyymmdd = [yyyymm, this._formatDay(value[0])].join('-');
             const startTime = this._formatTime(value[1]);
             let endTime = this._formatTime(value[4]);
@@ -95,46 +114,68 @@ class RakumoTimeRecorder {
             // 出勤中なら現在時刻を挿入
             endTime = (yyyymmdd === this.getYYYYMMDD() && endTime === null && startTime !== null) ? this.getHHMM() : endTime;
 
-            if (this.isWorkDay(yyyymmdd)) {
-                if (this.isOffAM(value[5])) {
-                    calcData.push(this.CalcTimeCard.offAM(endTime));
-                } else if (this.isOffPM(value[5])) {
-                    calcData.push(this.CalcTimeCard.offPM(startTime));
-                } else if (this.isOff(value[5])) {
-                    calcData.push(this.CalcTimeCard.off());
-                } else {
-                    calcData.push(this.CalcTimeCard.calc(startTime, endTime));
-                }
+            if (this.isOffAM(value[5])) {
+                // 午前休
+                this.calcData.push(this.CalcTimeCard.offAM(endTime));
+            } else if (this.isOffPM(value[5])) {
+                // 午後休
+                this.calcData.push(this.CalcTimeCard.offPM(startTime));
+            } else if (this.isOff(value[5])) {
+                // 有給休暇
+                this.calcData.push(this.CalcTimeCard.off());
+            } else if (this.isOffComp(value[5])) {
+                // 振替休日
+                this.offCompDay += 1;
             } else if (this.isOffWork(value[5])) {
-                // 休日出勤
-                offWorkDay += 1;
-                calcData.push(this.CalcTimeCard.calc(startTime, endTime));
+                // 休日出勤(申請あり)
+                this.offWorkDay += 1;
+                this.calcData.push(this.CalcTimeCard.offWork(startTime, endTime));
+            } else {
+                // 通常出勤
+                if (this.isWorkDay(yyyymmdd)) {
+                    this.calcData.push(this.CalcTimeCard.calc(startTime, endTime));
+                }
+                // 休日出勤(申請なし)
+                if (!this.isWorkDay(yyyymmdd) && startTime && endTime) {
+                    this.offWorkDay2 += 1;
+                    this.calcData.push(this.CalcTimeCard.calc(startTime, endTime));
+                }
             }
         });
 
-        // TSV用のタイムカード配列
-        timecard = this.TableParser.getAll();
-        const timetable = [];
-        timecard.forEach((value) => {
-            timetable.push([
-                (this.isOff(value[5])) ? '*' : null,
-                (this.isOffAM(value[5])) ? '*' : null,
-                this._formatTime(value[1]),
-                this._formatTime(value[4]),
-                (this.isOffPM(value[5])) ? '*' : null
+        // コピー用タイムカードデータを取得
+        tmpTimeCard = this.TableParser.getAll();
+
+        // コピー用タイムカードデータを配列に格納
+        tmpTimeCard.forEach((value) => {
+            this.timeData.push([
+                (this.isOffComp(value[5])) ? '*' : null, // 振替休日
+                (this.isOffWork(value[5])) ? '*' : null, // 休日出勤(申請)
+                (this.isOff(value[5])) ? '*' : null, // 有給休暇
+                (this.isOffAM(value[5])) ? '*' : null, // 午前休
+                this._formatTime(value[1]), // 出勤時間
+                this._formatTime(value[4]), // 退勤時間
+                (this.isOffPM(value[5])) ? '*' : null // 午後休
             ].join('\t'))
         });
+    }
 
-        // TSVコピー用のボタン生成
+    /**
+     * レンダリング
+     *
+     * @memberof RakumoTimeRecorder
+     */
+    render() {
+        // コピー用のボタン生成
         const elBtn = cE('button');
         const btnText = 'タイムカードを勤怠表形式でコピーする';
         elBtn.innerText = btnText;
         elBtn.style.marginBottom = '5px';
         elBtn.addEventListener('click', () => {
-            copy(timetable.join('\n'));
+            copy(this.timeData.join('\n'));
 
             const el = cE('span');
-            el.innerHTML = ' (コピー完了！勤怠表エクセルの<b>G5セル</b>に貼り付けてください)';
+            el.innerHTML = ' (コピー完了！勤怠表エクセルの<b>E5セル</b>に貼り付けてください)';
             el.style.color = '#f00';
             af(elBtn, el);
 
@@ -143,16 +184,17 @@ class RakumoTimeRecorder {
             }, 8000);
         });
 
-        // サマリーテーブル
-        const elTbl = cE('div');
+        // サマリーテーブル生成
+        const workDay = this.getWorkDay(); // 今月の労働日数
+        const workTime = this.CalcTimeCard.getWorkTime(); // 1日の労働時間
+        const coreTime = this.CalcTimeCard.getCoreTime(); // 1日のコアタイム
+        const leftDay = workDay - this.getWorkDay(true); // 残りの営業日数
         const keys = ['コア', 'コア外', '日計', 'ペナルティ', '残業', '欠勤', '有休'];
         const data = [0, 0, 0, 0, 0, 0, 0];
-        const coreTime = this.CalcTimeCard.getCoreTime();
-        const workTime = this.CalcTimeCard.getWorkTime();
-        const leftDay = workDay - calcData.length;
+        const elTbl = cE('div');
 
         // amコア, pmコア, コア外, 日計, ペナルティ, 残業, 有休
-        calcData.forEach((v) => {
+        this.calcData.forEach((v) => {
             data[0] += v[0] + v[1]; // AMコア + PMコア
             data[1] += v[2]; // コア外
             data[2] += v[3]; // 日計
@@ -166,22 +208,27 @@ class RakumoTimeRecorder {
         elTbl.innerHTML = '[今月の想定] ';
 
         // 今月の想定
-        [coreTime * (workDay + offWorkDay) - data[6] * coreTime, (workTime - coreTime) * (workDay + offWorkDay), workTime * (workDay + offWorkDay) - data[6] * coreTime].forEach((v, idx) => {
+        const tmpCore = coreTime * (workDay + this.offWorkDay2) - data[6] * coreTime + this.offWorkDay * coreTime - this.offCompDay * workTime; // 月のコア = 1日のコア * (営業日数 + 休日出勤) - 有休分 + 休日出勤(申請) - 代休分
+        const tmpCoreOut = (workTime - coreTime) * (workDay - this.offCompDay + this.offWorkDay2) + this.offWorkDay * workTime; // 月のコア外 = 1日のコア外 * (月の労働日数 - 代休 + 休出) + 休出(申請) * 1日の労働時間
+        [tmpCore, tmpCoreOut, tmpCore + tmpCoreOut].forEach((v, idx) => {
             if (idx) elTbl.innerHTML += ', ';
             elTbl.innerHTML += `${keys[idx]}: ${v}`;
         });
 
         // 営業日数
-        const offWork = offWorkDay ? `, 休出: ${offWorkDay}日` : '';
-        elTbl.innerHTML += `, 営業日数: ${workDay}日, 残り: ${leftDay}日${offWork}`;
+        const offWork = this.offWorkDay + this.offWorkDay2 ? `, 休出: ${this.offWorkDay}(${this.offWorkDay2})日` : '';
+        const compDay = this.offCompDay ? `, 代休: ${this.offCompDay}日` : '';
+        elTbl.innerHTML += `, 営業日数: ${workDay}日(残り: ${leftDay}日)${offWork}${compDay}`;
 
         const age = 'までの';
         const label = `現在${age}`;
-        const len = calcData.length;
+        const len = this.getWorkDay(true) - this.offCompDay;
 
         // 本日までの想定
         elTbl.innerHTML += `<br>[本日${age}想定] `;
-        [coreTime * len, (workTime - coreTime) * len, workTime * len].forEach((v, idx) => {
+        const tmpTodayCore = coreTime * len - coreTime * this.offWorkDay + coreTime * this.offWorkDay2;
+        const tmpTodayCoreOut = (workTime - coreTime) * len + coreTime * this.offWorkDay + coreTime * this.offWorkDay2;
+        [tmpTodayCore, tmpTodayCoreOut, tmpTodayCore + tmpTodayCoreOut].forEach((v, idx) => {
             if (idx) elTbl.innerHTML += ', ';
             elTbl.innerHTML += `${keys[idx]}: ${v}`;
         });
@@ -198,7 +245,7 @@ class RakumoTimeRecorder {
         if (coreTime * len > Math.round(data[0] * 100) / 100) elTbl.querySelector('.js0').style.color = 'red'; // コア
         if ((workTime - coreTime) * len > Math.round(data[1] * 100) / 100) elTbl.querySelector('.js1').style.color = 'red'; // コア外
 
-        // 追加領域のラッパー
+        // 表示領域確保
         const elWrap = cE('div');
         elWrap.style.clear = 'both';
         elWrap.style.padding = '5px 10px';
@@ -217,22 +264,26 @@ class RakumoTimeRecorder {
     /**
      * 月の営業日数を取得
      *
+     * @param {boolean} [isToday=false] trueなら本日までの営業日数を取得
      * @returns number
      * @memberof RakumoTimeRecorder
      */
-    getWorkDay() {
+    getWorkDay(isToday = false) {
         const rows = this.TableParser.getAll();
         const yyyymm = [this.getYear(), this.getMonth()].join('-');
+        const today = this.getYYYYMMDD();
 
         let workDay = 0;
 
-        rows.forEach((row) => {
+        rows.some((row) => {
             const yyyymmdd = [yyyymm, this._formatDay(row[0])].join('-');
 
             // 平日かつ祝日でなければカウント
             if (this.isWorkDay(yyyymmdd)) {
                 workDay += 1;
             }
+
+            return (isToday && today <= yyyymmdd) === true;
         });
 
         return workDay;
@@ -301,17 +352,6 @@ class RakumoTimeRecorder {
     }
 
     /**
-     * 休日出勤判定
-     *
-     * @param {string} string
-     * @returns bool
-     * @memberof RakumoTimeRecorder
-     */
-    isOffWork(string) {
-        return /休出|休日出勤/.test(string);
-    }
-
-    /**
      * 有給判定
      *
      * @param {string} string
@@ -345,6 +385,28 @@ class RakumoTimeRecorder {
     }
 
     /**
+     * 振替休日判定
+     *
+     * @param {string} string
+     * @returns bool
+     * @memberof RakumoTimeRecorder
+     */
+    isOffComp(string) {
+        return /[代|振替?]休/.test(string);
+    }
+
+    /**
+     * 休日出勤判定
+     *
+     * @param {string} string
+     * @returns bool
+     * @memberof RakumoTimeRecorder
+     */
+    isOffWork(string) {
+        return /休出|休日出勤/.test(string);
+    }
+
+    /**
      * 文字列から日を取得
      *
      * @param {string} string
@@ -360,7 +422,7 @@ class RakumoTimeRecorder {
      *
      * @private
      * @param {string} string
-     * @returns string
+     * @returns string|null
      * @memberof TableParser
      */
     _formatTime(string) {
@@ -534,4 +596,4 @@ class RowParser {
     }
 }
 
-req('GET', 'https://gist.githubusercontent.com/tsubasa/e4950c89550fade82e91c5b9cbc5cd31/raw');
+req('GET', `https://gist.githubusercontent.com/tsubasa/e4950c89550fade82e91c5b9cbc5cd31/raw?_=${new Date().getTime()}`);
