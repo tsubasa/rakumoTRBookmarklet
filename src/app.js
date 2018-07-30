@@ -1,44 +1,12 @@
 /* eslint-disable no-param-reassign */
 
 // バージョン
-const VERSION = '1.2.0';
+const VERSION = '1.2.1';
 
 // 休暇テーブル
 let HOLIDAY = {};
 
 // global functions
-const cE = (el) => {
-    return document.createElement(el);
-}
-
-const qS = (selector) => {
-    return document.querySelector(selector);
-}
-
-const qSA = (selector) => {
-    return document.querySelectorAll(selector);
-}
-
-const ap = (parent, el) => {
-    parent.appendChild(el);
-}
-
-const af = (parent, el) => {
-    parent.parentNode.insertBefore(el, parent.nextElementSibling);
-}
-
-const copy = (value) => {
-    const el = cE('textarea');
-    el.value = value;
-    el.setAttribute('readonly', '');
-    el.style.position = 'absolute';
-    el.style.left = '-9999px';
-    document.body.appendChild(el);
-    el.select();
-    document.execCommand('copy');
-    document.body.removeChild(el);
-}
-
 const req = (method, url) => {
     const xhr = new XMLHttpRequest();
     xhr.open(method, url, true);
@@ -167,17 +135,17 @@ class RakumoTimeRecorder {
      */
     render() {
         // コピー用のボタン生成
-        const elBtn = cE('button');
+        const elBtn = this._createElement('button');
         const btnText = 'タイムカードを勤怠表形式でコピーする';
         elBtn.innerText = btnText;
         elBtn.style.marginBottom = '5px';
         elBtn.addEventListener('click', () => {
-            copy(this.timeData.join('\n'));
+            this._copy(this.timeData.join('\n'));
 
-            const el = cE('span');
+            const el = this._createElement('span');
             el.innerHTML = ' (コピー完了！勤怠表エクセルの<b>E5セル</b>に貼り付けてください)';
             el.style.color = '#f00';
-            af(elBtn, el);
+            this._after(elBtn, el);
 
             setTimeout(() => {
                 el.parentNode.removeChild(el);
@@ -186,12 +154,13 @@ class RakumoTimeRecorder {
 
         // サマリーテーブル生成
         const workDay = this.getWorkDay(); // 今月の労働日数
+        const workToday = this.getWorkDay(true); // 今日までの営業日数
+        const leftDay = workDay - workToday; // 残りの営業日数
         const workTime = this.CalcTimeCard.getWorkTime(); // 1日の労働時間
         const coreTime = this.CalcTimeCard.getCoreTime(); // 1日のコアタイム
-        const leftDay = workDay - this.getWorkDay(true); // 残りの営業日数
         const keys = ['コア', 'コア外', '日計', 'ペナルティ', '残業', '欠勤', '有休'];
         const data = [0, 0, 0, 0, 0, 0, 0];
-        const elTbl = cE('div');
+        const elTbl = this._createElement('div');
 
         // amコア, pmコア, コア外, 日計, ペナルティ, 残業, 有休
         this.calcData.forEach((v) => {
@@ -208,33 +177,32 @@ class RakumoTimeRecorder {
         elTbl.innerHTML = '[今月の想定] ';
 
         // 今月の想定
-        const tmpCore = coreTime * (workDay + this.offWorkDay2) - data[6] * coreTime + this.offWorkDay * coreTime - this.offCompDay * workTime; // 月のコア = 1日のコア * (営業日数 + 休日出勤) - 有休分 + 休日出勤(申請) - 代休分
-        const tmpCoreOut = (workTime - coreTime) * (workDay - this.offCompDay + this.offWorkDay2) + this.offWorkDay * workTime; // 月のコア外 = 1日のコア外 * (月の労働日数 - 代休 + 休出) + 休出(申請) * 1日の労働時間
+        const tmpCore = coreTime * (workDay - this.offCompDay) - data[6] * coreTime; // 月のコア = 1日のコア * (今月の営業日数 - 代休) - 有休分
+        const tmpCoreOut = (workTime - coreTime) * (workDay + this.offWorkDay); // 月のコア外 = 1日のコア外 * (今月の営業日数 + 休出(申請))
         [tmpCore, tmpCoreOut, tmpCore + tmpCoreOut].forEach((v, idx) => {
             if (idx) elTbl.innerHTML += ', ';
             elTbl.innerHTML += `${keys[idx]}: ${v}`;
         });
 
         // 営業日数
-        const offWork = this.offWorkDay + this.offWorkDay2 ? `, 休出: ${this.offWorkDay}(${this.offWorkDay2})日` : '';
-        const compDay = this.offCompDay ? `, 代休: ${this.offCompDay}日` : '';
-        elTbl.innerHTML += `, 営業日数: ${workDay}日(残り: ${leftDay}日)${offWork}${compDay}`;
+        const offWorkLabel = this.offWorkDay + this.offWorkDay2 ? `, 休出: ${this.offWorkDay}(${this.offWorkDay2})日` : '';
+        const compDayLabel = this.offCompDay ? `, 代休: ${this.offCompDay}日` : '';
+        elTbl.innerHTML += `, 営業日数: ${workDay}日(残り: ${leftDay}日)${offWorkLabel}${compDayLabel}`;
 
-        const age = 'までの';
-        const label = `現在${age}`;
-        const len = this.getWorkDay(true) - this.offCompDay;
+        const ageLabel = 'までの';
+        const nowLabel = `現在${ageLabel}`;
 
         // 本日までの想定
-        elTbl.innerHTML += `<br>[本日${age}想定] `;
-        const tmpTodayCore = coreTime * len - coreTime * this.offWorkDay + coreTime * this.offWorkDay2;
-        const tmpTodayCoreOut = (workTime - coreTime) * len + coreTime * this.offWorkDay + coreTime * this.offWorkDay2;
+        elTbl.innerHTML += `<br>[本日${ageLabel}想定] `;
+        const tmpTodayCore = coreTime * (workToday - this.offCompDay) - data[6] * coreTime; // 月のコア = 1日のコア * (本日までの営業日数 - 代休) - 有休分
+        const tmpTodayCoreOut = (workTime - coreTime) * (workToday + this.offWorkDay); // 月のコア外 = 1日のコア外 * (本日までの営業日数 + 休出(申請))
         [tmpTodayCore, tmpTodayCoreOut, tmpTodayCore + tmpTodayCoreOut].forEach((v, idx) => {
             if (idx) elTbl.innerHTML += ', ';
             elTbl.innerHTML += `${keys[idx]}: ${v}`;
         });
 
         // 本日までの実績
-        elTbl.innerHTML += `<br>[${label}実績] `;
+        elTbl.innerHTML += `<br>[${nowLabel}実績] `;
         data.forEach((v, idx) => {
             v = Math.round(v * 100) / 100;
             if (idx) elTbl.innerHTML += ', ';
@@ -242,20 +210,20 @@ class RakumoTimeRecorder {
         });
 
         // 不足分を強調
-        if (coreTime * len > Math.round(data[0] * 100) / 100) elTbl.querySelector('.js0').style.color = 'red'; // コア
-        if ((workTime - coreTime) * len > Math.round(data[1] * 100) / 100) elTbl.querySelector('.js1').style.color = 'red'; // コア外
+        if (tmpTodayCore > Math.round(data[0] * 100) / 100) elTbl.querySelector('.js0').style.color = 'red'; // コア
+        if (tmpTodayCoreOut > Math.round(data[1] * 100) / 100) elTbl.querySelector('.js1').style.color = 'red'; // コア外
 
         // 表示領域確保
-        const elWrap = cE('div');
+        const elWrap = this._createElement('div');
         elWrap.style.clear = 'both';
         elWrap.style.padding = '5px 10px';
 
-        ap(elWrap, elBtn);
-        ap(elWrap, elTbl);
-        ap(qS('.timeCardHeader'), elWrap);
+        this._append(elWrap, elBtn);
+        this._append(elWrap, elTbl);
+        this._append(this._querySelector('.timeCardHeader'), elWrap);
 
         // fixed position top
-        const elHead = qS('.tableBodyWrapper');
+        const elHead = this._querySelector('.tableBodyWrapper');
         const offs = elWrap.offsetHeight;
         elHead.style.top = elHead.style.top ? `${parseInt(elHead.style.top.replace('px', '')) + offs}px` : 'auto';
         elHead.style.height = elHead.style.height ? `${parseInt(elHead.style.height.replace('px', '')) - offs}px` : 'auto';
@@ -296,7 +264,7 @@ class RakumoTimeRecorder {
      * @memberof RakumoTimeRecorder
      */
     getYear() {
-        return qS('input[type="hidden"][name="year"]').value;
+        return this._querySelector('input[type="hidden"][name="year"]').value;
     }
 
     /**
@@ -306,7 +274,7 @@ class RakumoTimeRecorder {
      * @memberof RakumoTimeRecorder
      */
     getMonth() {
-        return `0${qS('input[type="hidden"][name="month"]').value}`.slice(-2);
+        return `0${this._querySelector('input[type="hidden"][name="month"]').value}`.slice(-2);
     }
 
     /**
@@ -429,6 +397,68 @@ class RakumoTimeRecorder {
         const matches = string.match(/[0-2]?[0-9]:[0-5][0-9]/);
         return matches ? `0${matches[0]}`.slice(-5) : null;
     }
+
+    /**
+     * createElement
+     *
+     * @param {string} el 作成するelement
+     * @returns
+     * @memberof RakumoTimeRecorder
+     */
+    _createElement(el) {
+        return document.createElement(el);
+    }
+
+    /**
+     * querySelector
+     *
+     * @param {string} selector セレクター
+     * @returns
+     * @memberof RakumoTimeRecorder
+     */
+    _querySelector(selector) {
+        return document.querySelector(selector);
+    }
+
+    /**
+     * append
+     *
+     * @param {object} parent 親element
+     * @param {object} el 追加するelement
+     * @memberof RakumoTimeRecorder
+     */
+    _append(parent, el) {
+        parent.appendChild(el);
+    }
+
+    /**
+     * after
+     *
+     * @param {object} parent どのelementの後ろにafterするか
+     * @param {object} el 挿入するelement
+     * @memberof RakumoTimeRecorder
+     */
+    _after(parent, el) {
+        parent.parentNode.insertBefore(el, parent.nextElementSibling);
+    }
+
+    /**
+     * copy
+     *
+     * @param {string} value コピーする値
+     * @memberof RakumoTimeRecorder
+     */
+    _copy(value) {
+        const el = this._createElement('textarea');
+        el.value = value;
+        el.setAttribute('readonly', '');
+        el.style.position = 'absolute';
+        el.style.left = '-9999px';
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+    }
 }
 
 /**
@@ -438,7 +468,7 @@ class RakumoTimeRecorder {
  */
 class TableParser {
     constructor(selector) {
-        this.$rows = qSA(selector);
+        this.$rows = document.querySelectorAll(selector);
         this.length = this.$rows.length;
 
         if (!this.length) {
