@@ -149,7 +149,7 @@ class CalcTimeCard {
         this.penalty = this._round(this.penalty - (this.amCore + this.pmCore));
 
         // 残業計算
-        this.overtime = (this.dayWork - this.WORK_TIME) > 0 ? this._round(this.dayWork - this.WORK_TIME, 1) : 0;
+        this.overtime = (this.dayWork - this.WORK_TIME) > 0 ? this._round(this.dayWork - this.WORK_TIME) : 0;
 
         // amコア, pmコア, コア外, 日計, ペナルティ, 残業, 有休
         return [this.amCore, this.pmCore, this._round(this.dayWork - (this.amCore + this.pmCore)), this.dayWork, this.penalty, this.overtime, offDay];

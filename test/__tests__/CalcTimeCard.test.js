@@ -330,16 +330,16 @@ describe('class: CalcTimeCard', () => {
         describe('浮動小数点演算', () => {
             test('10:00-19:21', () => {
                 const result = ctc.calc('10:00', '19:21');
-                expect(result).toEqual([2, 2, 4.35, 8.35, 0, 0.4, 0]);
+                expect(result).toEqual([2, 2, 4.35, 8.35, 0, 0.35, 0]);
             });
 
             test('10:58-20:19', () => {
                 const result = ctc.calc('10:58', '20:19');
-                expect(result).toEqual([2, 2, 4.35, 8.35, 0, 0.4, 0]);
+                expect(result).toEqual([2, 2, 4.35, 8.35, 0, 0.35, 0]);
             });
 
             test('10:49-20:16', () => {
-                expect(ctc.calc('10:49', '20:16')).toEqual([2, 2, 4.45, 8.45, 0, 0.5, 0]);
+                expect(ctc.calc('10:49', '20:16')).toEqual([2, 2, 4.45, 8.45, 0, 0.45, 0]);
             });
         });
 
