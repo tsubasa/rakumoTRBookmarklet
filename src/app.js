@@ -1,7 +1,7 @@
 /* eslint-disable no-param-reassign */
 
 // バージョン
-const VERSION = '1.2.1';
+const VERSION = '1.2.2';
 
 // 休暇テーブル
 let HOLIDAY = {};
@@ -212,6 +212,7 @@ class RakumoTimeRecorder {
         // 不足分を強調
         if (tmpTodayCore > Math.round(data[0] * 100) / 100) elTbl.querySelector('.js0').style.color = 'red'; // コア
         if (tmpTodayCoreOut > Math.round(data[1] * 100) / 100) elTbl.querySelector('.js1').style.color = 'red'; // コア外
+        if (data[3] > 0) elTbl.querySelector('.js3').style.color = 'red'; // ペナルティ
 
         // 表示領域確保
         const elWrap = this._createElement('div');
