@@ -1,7 +1,7 @@
 /* eslint-disable no-param-reassign */
 
 // バージョン
-const VERSION = '1.2.2';
+const VERSION = '1.2.3';
 
 // 休暇テーブル
 let HOLIDAY = {};
@@ -82,32 +82,32 @@ class RakumoTimeRecorder {
             // 出勤中なら現在時刻を挿入
             endTime = (yyyymmdd === this.getYYYYMMDD() && endTime === null && startTime !== null) ? this.getHHMM() : endTime;
 
-            if (this.isOffAM(value[5])) {
-                // 午前休
-                this.calcData.push(this.CalcTimeCard.offAM(endTime));
-            } else if (this.isOffPM(value[5])) {
-                // 午後休
-                this.calcData.push(this.CalcTimeCard.offPM(startTime));
-            } else if (this.isOff(value[5])) {
-                // 有給休暇
-                this.calcData.push(this.CalcTimeCard.off());
-            } else if (this.isOffComp(value[5])) {
-                // 振替休日
-                this.offCompDay += 1;
+            // 出勤日の判定
+            if (this.isWorkDay(yyyymmdd)) {
+                if (this.isOffAM(value[5])) {
+                    // 午前休
+                    this.calcData.push(this.CalcTimeCard.offAM(endTime));
+                } else if (this.isOffPM(value[5])) {
+                    // 午後休
+                    this.calcData.push(this.CalcTimeCard.offPM(startTime));
+                } else if (this.isOff(value[5])) {
+                    // 有給休暇
+                    this.calcData.push(this.CalcTimeCard.off());
+                } else if (this.isOffComp(value[5])) {
+                    // 振替休日
+                    this.offCompDay += 1;
+                } else {
+                    // 通常出勤
+                    this.calcData.push(this.CalcTimeCard.calc(startTime, endTime));
+                }
             } else if (this.isOffWork(value[5])) {
                 // 休日出勤(申請あり)
                 this.offWorkDay += 1;
                 this.calcData.push(this.CalcTimeCard.offWork(startTime, endTime));
-            } else {
-                // 通常出勤
-                if (this.isWorkDay(yyyymmdd)) {
-                    this.calcData.push(this.CalcTimeCard.calc(startTime, endTime));
-                }
+            } else if (startTime && endTime) {
                 // 休日出勤(申請なし)
-                if (!this.isWorkDay(yyyymmdd) && startTime && endTime) {
-                    this.offWorkDay2 += 1;
-                    this.calcData.push(this.CalcTimeCard.calc(startTime, endTime));
-                }
+                this.offWorkDay2 += 1;
+                this.calcData.push(this.CalcTimeCard.calc(startTime, endTime));
             }
         });
 
@@ -184,7 +184,7 @@ class RakumoTimeRecorder {
             elTbl.innerHTML += `${keys[idx]}: ${v}`;
         });
 
-        // 営業日数
+        // 営業日数, 休出, 代休
         const offWorkLabel = this.offWorkDay + this.offWorkDay2 ? `, 休出: ${this.offWorkDay}(${this.offWorkDay2})日` : '';
         const compDayLabel = this.offCompDay ? `, 代休: ${this.offCompDay}日` : '';
         elTbl.innerHTML += `, 営業日数: ${workDay}日(残り: ${leftDay}日)${offWorkLabel}${compDayLabel}`;
@@ -204,6 +204,7 @@ class RakumoTimeRecorder {
         // 本日までの実績
         elTbl.innerHTML += `<br>[${nowLabel}実績] `;
         data.forEach((v, idx) => {
+            if (v === 0 && (idx === 4 || idx === 5 || idx === 6)) return; // 残業,欠勤,有休が0なら表示しない
             v = Math.round(v * 100) / 100;
             if (idx) elTbl.innerHTML += ', ';
             elTbl.innerHTML += `<span class="js${idx}">${keys[idx]}: ${v}</span>`;
@@ -527,8 +528,9 @@ class RowParser {
     }
 
     /**
-     * 配列でレコードを取得
+     * 全レコードを取得
      *
+     * @param {array} row
      * @returns array
      * @memberof RowParser
      */
@@ -539,6 +541,7 @@ class RowParser {
     /**
      * 日付を取得
      *
+     * @param {array} row
      * @returns string
      * @memberof RowParser
      */
@@ -549,6 +552,7 @@ class RowParser {
     /**
      * 出勤時間を取得
      *
+     * @param {array} row
      * @returns string
      * @memberof RowParser
      */
@@ -559,6 +563,7 @@ class RowParser {
     /**
      * 退勤時間を取得
      *
+     * @param {array} row
      * @returns string
      * @memberof RowParser
      */
@@ -569,6 +574,7 @@ class RowParser {
     /**
      * 外出時間を取得
      *
+     * @param {array} row
      * @returns string
      * @memberof RowParser
      */
@@ -579,6 +585,7 @@ class RowParser {
     /**
      * 帰社時間を取得
      *
+     * @param {array} row
      * @returns string
      * @memberof RowParser
      */
@@ -589,6 +596,7 @@ class RowParser {
     /**
      * コメントを取得
      *
+     * @param {array} row
      * @returns string
      * @memberof RowParser
      */
